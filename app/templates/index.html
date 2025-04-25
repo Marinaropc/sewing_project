@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sewing Pattern Generator</title>
+  <script>
+    function updateFields() {
+      const pattern = document.getElementById("pattern").value;
+      // Show the bust field for bikini top and corset
+      document.getElementById("bust-field").style.display = pattern === "bikini_top" || pattern === "corset" ? "block" : "none";
+      // Show the waist field for bikini bottom and corset
+      document.getElementById("waist-field").style.display = pattern === "bikini_bottom" || pattern === "corset" ? "block" : "none";
+    }
+
+    window.onload = updateFields; // run once when page loads
+  </script>
+</head>
+<body>
+  <h1>Generate Your Custom Sewing Pattern</h1>
+
+  <form action="/generate" method="post">
+    <label for="pattern">Choose a garment:</label>
+    <select name="pattern" id="pattern" onchange="updateFields()">
+      <option value="bikini_top">Bikini Top</option>
+      <option value="bikini_bottom">Bikini Bottom</option>
+      <option value="corset">Corset</option>
+    </select>
+    <br><br>
+
+    <div id="bust-field" style="display: none;">
+      <label for="bust">Bust (cm):</label>
+      <input type="text" name="bust">
+    </div>
+
+    <div id="waist-field" style="display: none;">
+      <label for="waist">Waist (cm):</label>
+      <input type="text" name="waist">
+    </div>
+
+    <br>
+    <button type="submit">Generate Pattern</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<h2>Extracted Elements</h2>
+<ul>
+    {% for el in elements %}
+        <li>{{ el.type }}: {{ el.id or el.text or el.d[:50] }}</li>
+    {% endfor %}
+</ul>
+<h2>User Measurements</h2>
+<ul>
+  <li>Bust: {{ bust }} cm</li>
+  <li>Waist: {{ waist }} cm</li>
+  <li>Hips: {{ hips }} cm</li>
+</ul>
