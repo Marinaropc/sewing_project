@@ -17,7 +17,6 @@ def generate_bikini_bottom(waist):
 
     svg = svgwrite.Drawing(size=("200mm", "200mm"))
 
-    # Try of a bikini bottom shape
     path = svg.path(d="M 10 10 C 30 30, 50 30, 70 10 "
                       "C 90 30, 110 30, 130 10 "
                       "C 140 40, 110 70, 70 60 "

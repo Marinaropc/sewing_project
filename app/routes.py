@@ -14,7 +14,7 @@ def safe_float(value, default=0.0):
     except (TypeError, ValueError):
         return default
 
-# Move scale_svg to module level
+
 def scale_svg(svg_content, scale_x=1.0, scale_y=1.0):
     import xml.etree.ElementTree as ET
     tree = ET.fromstring(svg_content)
