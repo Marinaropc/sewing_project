@@ -1,23 +1,22 @@
-<h1>Upload Your SVG Pattern</h1>
+<h1>Upload Your Pattern</h1>
 
-<label for="pattern">Pattern type:</label><br>
+<form action="/upload" method="post" enctype="multipart/form-data">
+  <label for="pattern">Pattern type:</label><br>
 <select name="pattern" id="pattern" required>
   <option value="bikini_top">Bikini Top</option>
   <option value="bikini_bottom">Bikini Bottom</option>
   <option value="corset">Corset</option>
 </select><br><br>
-<form action="/upload" method="post" enctype="multipart/form-data">
-  <label>Upload pattern file (SVG):</label><br>
-  <input type="file" name="svg_file" accept=".svg" required><br><br>
-
+  <label>Upload pattern file (SVG, PDF):</label><br>
+  <input type="file" name="svg_file" accept=".svg,application/pdf" required><br><br>
   <label>Bust (cm):</label><br>
-  <input type="number" name="bust" step="0.1" required><br><br>
-
+  <input type="number" name="bust" step="0.1"><br><br>
   <label>Waist (cm):</label><br>
   <input type="number" name="waist" step="0.1"><br><br>
-
   <label>Hips (cm):</label><br>
   <input type="number" name="hips" step="0.1"><br><br>
-
+  <label for="torso_height">Torso height (cm):</label><br>
+  <input type="number" step="0.1" name="torso_height" id="torso_height"><br>
+  <br>
   <button type="submit">Upload & Analyze</button>
 </form>

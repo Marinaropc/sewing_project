@@ -1,32 +1,14 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from app.ai_calls import get_pattern_parameters
 from app.pattern_generator import generate_bikini_top, generate_corset, generate_bikini_bottom
 import os
+from app.gemini_calls import get_sewing_instructions
 from werkzeug.utils import secure_filename
 from app.svg_extract import extract_paths_and_labels, summarize_svg_pattern
-
+from app.resize import safe_float, scale_svg, resize_image, images_to_pdf, convert_pdf_to_images
 
 app = Flask(__name__)
 
-def safe_float(value, default=0.0):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def scale_svg(svg_content, scale_x=1.0, scale_y=1.0):
-    import xml.etree.ElementTree as ET
-    tree = ET.fromstring(svg_content)
-    g = ET.Element('g')
-    g.attrib['transform'] = f'scale({scale_x},{scale_y})'
-
-    for elem in list(tree):
-        g.append(elem)
-        tree.remove(elem)
-
-    tree.append(g)
-    return ET.tostring(tree, encoding='unicode')
 
 @app.route("/")
 def index():
@@ -34,7 +16,7 @@ def index():
 
 
 @app.route("/upload", methods=["GET", "POST"])
-def upload_svg():
+def upload_file():
     if request.method == "POST":
         # Get pattern type and measurements
         pattern_type = request.form.get("pattern")
@@ -44,27 +26,78 @@ def upload_svg():
 
         # Validate upload
         file = request.files.get("svg_file")
-        if not file or not file.filename.lower().endswith(".svg"):
-            return "Please upload a valid SVG file.", 400
+        if not file:
+            return "Please upload a file.", 400
 
-        svg_content = file.read().decode("utf-8")
         filename = secure_filename(file.filename)
         upload_dir = os.path.join(app.root_path, "uploads")
         os.makedirs(upload_dir, exist_ok=True)
         filepath = os.path.join(upload_dir, filename)
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(svg_content)
+        if filename.lower().endswith(".svg"):
+            svg_content = file.read().decode("utf-8")
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(svg_content)
+        elif filename.lower().endswith(".pdf"):
+            file.save(filepath)
+        else:
+            return "Unsupported file type", 400
 
+        if filename.lower().endswith(".pdf"):
+
+            image_paths = convert_pdf_to_images(filepath, upload_dir)
+
+            base_bust = 90
+            base_waist = 70
+            base_hips = 95
+            user_meas_str = f"bust = {bust}, waist = {waist}, hips = {hips}"
+
+            resize_response = get_pattern_parameters(pattern_type, "pdf file", user_meas_str)
+
+            scale_x = scale_y = 1.0
+            for line in resize_response.splitlines():
+                if "scale_x" in line:
+                    scale_x = float(line.split("=", 1)[1].strip())
+                if "scale_y" in line:
+                    scale_y = float(line.split("=", 1)[1].strip())
+
+            if scale_y == 1.0:
+                vertical = safe_float(request.form.get("torso_height"))
+                base_vertical = 30
+                if vertical and base_vertical:
+                    scale_y = vertical / base_vertical
+
+            resized_images = []
+            for img_path in image_paths:
+                output_img = img_path.replace(".png", "_resized.png")
+                resize_image(img_path, scale_x, scale_y, output_img)
+                resized_images.append(output_img)
+
+            resized_pdf_path = os.path.join(upload_dir, f"resized_{filename}")
+            images_to_pdf(resized_images, resized_pdf_path)
+
+            return render_template(
+                "pdf_result.html",
+                images=resized_images,
+                filename=os.path.basename(resized_pdf_path)
+            )
         # Summarize and trim for GPT
         summary = summarize_svg_pattern(filepath)
         trimmed_summary = "\n".join(summary.splitlines()[:10])
-        user_meas_str = f"bust = {bust}, waist = {waist}, hips = {hips}"
 
+        measurements = []
+        if bust:
+            measurements.append(f"bust = {bust}")
+        if waist:
+            measurements.append(f"waist = {waist}")
+        if hips:
+            measurements.append(f"hips = {hips}")
+
+        user_meas_str = ", ".join(measurements)
         # Get GPT resize instructions
         resize_response = get_pattern_parameters(
             pattern_type, trimmed_summary, user_meas_str
         )
-        print("GPT RESIZE INSTRUCTIONS:\n", resize_response)
+
 
         # Parse scale factors
         scale_x = scale_y = 1.0
@@ -74,21 +107,42 @@ def upload_svg():
             if "scale_y" in line:
                 scale_y = float(line.split("=", 1)[1].strip())
 
+
+        if scale_y == 1.0:
+            vertical = safe_float(request.form.get("torso_height"))
+            base_vertical = 30
+            if vertical and base_vertical:
+                scale_y = vertical / base_vertical
+
         # Apply scaling
         scaled_svg = scale_svg(svg_content, scale_x, scale_y)
+        output_path = os.path.join("scaled", f"scaled_{filename}")
+        os.makedirs("scaled", exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(scaled_svg)
 
-        # Extract elements for UI
-        elements = extract_paths_and_labels(filepath)
+        # For gemini
+        instructions = get_sewing_instructions(pattern_type, user_meas_str)
+        print(f"Received pattern_type: {pattern_type}")
+
+        print("Download filename:", filename)
         return render_template(
             "upload_result.html",
-            elements=elements,
             bust=bust,
             waist=waist,
             hips=hips,
             scaled_svg=scaled_svg,
+            filename=filename,
+            instructions=instructions
         )
 
     return render_template("upload.html")
+
+
+@app.route("/download/<filename>")
+def download_scaled(filename):
+    scaled_dir = os.path.join(os.path.dirname(app.root_path), "scaled")
+    return send_from_directory(scaled_dir, filename, as_attachment=True)
 
 
 @app.route("/generate", methods = ["POST"])
@@ -101,8 +155,8 @@ def generate():
             return "Error: Bust measurement is required for bikini top.", 400
         bust = float(bust_str)
 
-        ai_response = get_pattern_parameters("bikini top", f"bust = {bust}")
-        print(ai_response)
+        user_meas_str = f"bust = {bust}"
+        ai_response = get_pattern_parameters("bikini_top", "simple shape", user_meas_str)
 
         try:
             for line in ai_response.splitlines():
@@ -148,7 +202,7 @@ def generate():
         waist = float(waist_str)
         bust = float(bust_str)
         ai_response = get_pattern_parameters("corset", f"waist = {waist}, bust = {bust}")
-        print("AI RESPONSE:", ai_response)
+
         try:
             for line in ai_response.splitlines():
                 if "top_width" in line and "bottom_width" in line and "height" in line:

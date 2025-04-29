@@ -1,43 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Sewing Pattern Generator</title>
-  <script>
-    function updateFields() {
-      const pattern = document.getElementById("pattern").value;
-      // Show the bust field for bikini top and corset
-      document.getElementById("bust-field").style.display = pattern === "bikini_top" || pattern === "corset" ? "block" : "none";
-      // Show the waist field for bikini bottom and corset
-      document.getElementById("waist-field").style.display = pattern === "bikini_bottom" || pattern === "corset" ? "block" : "none";
-    }
-
-    window.onload = updateFields; // run once when page loads
-  </script>
+    <meta charset="UTF-8">
+    <title>KiPatterns Home</title>
 </head>
 <body>
-  <h1>Generate Your Custom Sewing Pattern</h1>
+    <h1>Welcome to KiPatterns!</h1>
+    <p>This is your pattern assistant app. Choose an option below:</p>
 
-  <form action="/generate" method="post">
-    <label for="pattern">Choose a garment:</label>
-    <select name="pattern" id="pattern" onchange="updateFields()">
-      <option value="bikini_top">Bikini Top</option>
-      <option value="bikini_bottom">Bikini Bottom</option>
-      <option value="corset">Corset</option>
-    </select>
-    <br><br>
+    <ul>
+        <li><a href="{{ url_for('upload_file') }}">Upload a Pattern (SVG)</a></li>
+        <li><a href="{{ url_for('index') }}#generate-section">Generate a Pattern (AI-based)</a></li>
+    </ul>
 
-    <div id="bust-field" style="display: none;">
-      <label for="bust">Bust (cm):</label>
-      <input type="text" name="bust">
+    <!-- Optional: Include a section to later display the generate form directly -->
+    <div id="generate-section">
+        <h2>Generate a New Pattern</h2>
+        <form action="{{ url_for('generate') }}" method="post">
+            <label for="pattern">Pattern Type:</label>
+            <select name="pattern" id="pattern">
+                <option value="bikini_top">Bikini Top</option>
+                <option value="bikini_bottom">Bikini Bottom</option>
+                <option value="corset">Corset</option>
+            </select><br><br>
+
+            <label for="bust">Bust (cm):</label>
+            <input type="number" name="bust" id="bust" step="0.1"><br><br>
+
+            <label for="waist">Waist (cm):</label>
+            <input type="number" name="waist" id="waist" step="0.1"><br><br>
+
+            <label for="hips">Hips (cm):</label>
+            <input type="number" name="hips" id="hips" step="0.1"><br><br>
+
+            <button type="submit">Generate Pattern</button>
+        </form>
     </div>
-
-    <div id="waist-field" style="display: none;">
-      <label for="waist">Waist (cm):</label>
-      <input type="text" name="waist">
-    </div>
-
-    <br>
-    <button type="submit">Generate Pattern</button>
-  </form>
 </body>
 </html>

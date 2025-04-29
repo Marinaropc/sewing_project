@@ -44,3 +44,9 @@ def generate_corset(waist, bust):
         svg.add(svg.circle(center=(10 + width + 5, 10 + i * 5), r=1, fill="black"))
 
     return svg.tostring()
+
+
+def strip_svg_namespace(elem):
+    for el in elem.iter():
+        if '}' in el.tag:
+            el.tag = el.tag.split('}', 1)[1]

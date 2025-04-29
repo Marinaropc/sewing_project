@@ -1,12 +1,11 @@
 <h2>Extracted Elements</h2>
-<ul>
-    {% for el in elements %}
-        <li>{{ el.type }}: {{ el.id or el.text or el.d[:50] }}</li>
-    {% endfor %}
-</ul>
+
 <h2>User Measurements</h2>
 <ul>
   <li>Bust: {{ bust }} cm</li>
   <li>Waist: {{ waist }} cm</li>
   <li>Hips: {{ hips }} cm</li>
 </ul>
+<p><a href="{{ url_for('download_scaled', filename='scaled_' + filename) }}">Download scaled pattern</a></p>
+<h2>Sewing Instructions</h2>
+<p>{{ instructions }}</p>

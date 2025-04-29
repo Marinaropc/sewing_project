@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Converted PDF Pages</title>
+</head>
+<body>
+    <h1>Converted Pages from {{ filename }}</h1>
+
+    {% if images %}
+        {% for img_path in images %}
+            <div style="margin-bottom: 20px;">
+                <img src="{{ url_for('static', filename=img_path.split('/')[-1]) }}"
+                     alt="Page Image"
+                     style="max-width: 90%; border: 1px solid #ccc; padding: 10px;">
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No images were generated from the PDF.</p>
+    {% endif %}
+
+    <p><a href="/">⬅️ Back to Home</a></p>
+</body>
+</html>
